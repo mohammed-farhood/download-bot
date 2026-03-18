@@ -58,7 +58,15 @@ def download():
         'no_warnings': True,
         'prefer_free_formats': True,
         'geo_bypass': True,
+        'cookiefile': None,
     })
+    
+    # Use alternative YouTube extractor
+    if 'youtube' in url.lower():
+        ydl_opts['extractor'] = ['youtube:playlist', 'youtube:vide']
+        ydl_opts['http_headers'] = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
