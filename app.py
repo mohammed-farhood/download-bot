@@ -4,13 +4,6 @@ import os
 
 app = Flask(__name__)
 
-INVIDIOUS_INSTANCES = [
-    "https://invidious.fdn.fr",
-    "https://invidious.jingl.xyz", 
-    "https://invidious.kavin.rocks",
-    "https://youtube.privacydev.net",
-]
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -28,70 +21,72 @@ def download():
         if 'instagram.com' in url:
             return download_instagram(url)
         elif 'youtube.com' in url or 'youtu.be' in url:
-            return download_youtube(url, download_type)
+            return download_youtube(url)
         else:
             return jsonify({'error': 'Unsupported platform'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-def download_youtube(url, download_type):
-    video_id = extract_youtube_id(url)
-    if not video_id:
-        return jsonify({'error': 'Invalid YouTube URL'}), 400
-    
-    # Try each Invidious instance
-    for instance in INVIDIOUS_INSTANCES:
-        try:
-            # Get video info
-            api_url = f"{instance}/api/v1/videos/{video_id}"
-            response = requests.get(api_url, timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                if download_type == 'audio':
-                    # Find audio-only format
-                    for fmt in data.get('adaptiveFormats', []):
-                        if 'audio' in fmt.get('type', ''):
-                            return jsonify({
-                                'success': True,
-                                'download_url': f"{instance}/api/v1/videos/{video_id}/signature?format=140",
-                            })
-                else:
-                    # Return video page for download
-                    return jsonify({
-                        'success': True,
-                        'download_url': f"{instance}/watch?v={video_id}",
-                    })
-        except Exception as e:
-            continue
-    
-    return jsonify({'error': 'All servers failed. Try Instagram instead.'}), 500
-
-def download_instagram(url):
-    # Use a simple approach - return redirect
+def download_youtube(url):
+    # Try direct redirect to y2mate
     try:
-        api_url = "https://api.bijinder.com/instagram"
-        response = requests.post(api_url, json={'url': url}, timeout=30)
-        
-        if response.status_code == 200:
-            data = response.json()
+        # Extract video ID
+        video_id = extract_youtube_id(url)
+        if video_id:
+            # Direct download link via y2mate
             return jsonify({
                 'success': True,
-                'download_url': data.get('url', data.get('video_url', ''))
+                'download_url': f"https://www.y2mate.com/youtube-mp3/{video_id}",
+                'message': 'Click to download on y2mate'
             })
     except:
         pass
     
-    return jsonify({'error': 'Instagram download unavailable'}), 500
+    # Try Invidious
+    try:
+        instances = ["https://invidious.fdn.fr", "https://invidious.kavin.rocks"]
+        for instance in instances:
+            video_id = extract_youtube_id(url)
+            if video_id:
+                return jsonify({
+                    'success': True,
+                    'download_url': f"{instance}/watch?v={video_id}",
+                    'message': 'Click to download on Invidious'
+                })
+    except:
+        pass
+    
+    return jsonify({'error': 'YouTube unavailable. Try downloading directly from browser.'}), 500
+
+def download_instagram(url):
+    # Try multiple Instagram download APIs
+    apis = [
+        ("https://api.bijinder.com/instagram", {"url": url}),
+        ("https://backend.savefrom.net/savefrom.php", {"url": url}),
+    ]
+    
+    for api_url, payload in apis:
+        try:
+            response = requests.post(api_url, json=payload, timeout=30, 
+                                   headers={'User-Agent': 'Mozilla/5.0'})
+            if response.status_code == 200:
+                data = response.json()
+                media_url = data.get('url') or data.get('video_url') or data.get('result')
+                if media_url:
+                    return jsonify({
+                        'success': True,
+                        'download_url': media_url
+                    })
+        except:
+            continue
+    
+    return jsonify({'error': 'Instagram unavailable. Try downloading directly from browser.'}), 500
 
 def extract_youtube_id(url):
-    # Extract video ID from various YouTube URL formats
     import re
     patterns = [
         r'(?:youtube\.com/watch\?v=)([a-zA-Z0-9_-]{11})',
         r'(?:youtu\.be/)([a-zA-Z0-9_-]{11})',
-        r'(?:youtube\.com/embed/)([a-zA-Z0-9_-]{11})',
     ]
     for pattern in patterns:
         match = re.search(pattern, url)
