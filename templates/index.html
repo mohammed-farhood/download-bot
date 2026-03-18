@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Downloader</title>
+    <title>Downloader</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -17,7 +17,7 @@
             padding: 20px;
         }
         .container {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255,255,255,0.1);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 30px;
@@ -25,21 +25,20 @@
             max-width: 400px;
             text-align: center;
         }
-        h1 { color: white; margin-bottom: 10px; font-size: 24px; }
-        p { color: rgba(255,255,255,0.7); margin-bottom: 25px; font-size: 14px; }
+        h1 { color: white; margin-bottom: 5px; }
+        p { color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px; }
         input {
             width: 100%;
             padding: 15px;
-            border: none;
             border-radius: 12px;
             background: rgba(255,255,255,0.1);
             color: white;
+            border: none;
             font-size: 16px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             outline: none;
         }
         input::placeholder { color: rgba(255,255,255,0.5); }
-        input:focus { background: rgba(255,255,255,0.15); }
         .buttons { display: flex; gap: 10px; }
         button {
             flex: 1;
@@ -49,20 +48,17 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
         }
-        button:active { transform: scale(0.95); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-audio { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
-        .btn-video { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
-        .status { margin-top: 20px; color: white; font-size: 14px; min-height: 20px; }
+        .btn-audio { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+        .btn-video { background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; }
+        .status { margin-top: 20px; color: white; font-size: 14px; }
         .error { color: #ff6b6b; }
         .success { color: #51cf66; }
-        .download-link {
+        a.download-link {
             display: inline-block;
             margin-top: 15px;
             padding: 12px 24px;
-            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+            background: linear-gradient(135deg, #51cf66, #40c057);
             color: white;
             text-decoration: none;
             border-radius: 10px;
@@ -74,14 +70,11 @@
     <div class="container">
         <h1>Downloader</h1>
         <p>YouTube & Instagram</p>
-        
-        <input type="text" id="url" placeholder="Paste URL here..." />
-        
+        <input type="text" id="url" placeholder="Paste URL here...">
         <div class="buttons">
             <button class="btn-audio" onclick="download('audio')">MP3</button>
             <button class="btn-video" onclick="download('video')">Video</button>
         </div>
-        
         <div class="status" id="status"></div>
     </div>
 
@@ -94,7 +87,7 @@
             const statusDiv = document.getElementById('status');
             
             if (!url) {
-                statusDiv.textContent = 'Please enter a URL';
+                statusDiv.textContent = 'Enter a URL';
                 statusDiv.className = 'status error';
                 return;
             }
@@ -114,12 +107,14 @@
                 if (data.error) {
                     statusDiv.textContent = data.error;
                     statusDiv.className = 'status error';
-                } else if (data.success && data.download_url) {
-                    statusDiv.innerHTML = `<a href="${data.download_url}" target="_blank" class="download-link">Download Now</a>`;
+                } else if (data.success) {
+                    if (data.download_url) {
+                        statusDiv.innerHTML = `<a href="${data.download_url}" target="_blank" class="download-link">Open Download Page</a>`;
+                        if (data.message) {
+                            statusDiv.innerHTML += `<p style="margin-top:10px;font-size:12px">${data.message}</p>`;
+                        }
+                    }
                     statusDiv.className = 'status success';
-                } else {
-                    statusDiv.textContent = 'Something went wrong';
-                    statusDiv.className = 'status error';
                 }
             } catch (e) {
                 statusDiv.textContent = 'Error: ' + e.message;
