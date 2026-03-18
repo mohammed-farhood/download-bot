@@ -1,8 +1,53 @@
 from flask import Flask, render_template, request, jsonify
 import requests
 import re
+import os
 
 app = Flask(__name__)
+
+# RapidAPI credentials (optional)
+RAPIDAPI_KEY = os.environ.get("RAPIDAPI_KEY")
+RAPIDAPI_HOST = os.environ.get("RAPIDAPI_HOST")
+RAPIDAPI_BASE_URL = os.environ.get("RAPIDAPI_BASE_URL") or (f"https://{RAPIDAPI_HOST}" if RAPIDAPI_HOST else "")
+
+def call_rapidapi(url, dtype):
+    if not RAPIDAPI_KEY or not RAPIDAPI_HOST:
+        return {"success": False, "error": "RapidAPI credentials not configured"}
+    api_base = RAPIDAPI_BASE_URL or f"https://{RAPIDAPI_HOST}"
+    endpoints = [
+        f"{api_base}/download",
+        f"{api_base}/v1/download",
+        f"{api_base}/video",
+    ]
+    headers = {
+        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Host": RAPIDAPI_HOST,
+    }
+    payload = {"url": url}
+    payload["format"] = "mp3" if dtype == "audio" else "mp4"
+    # Try POST
+    for ep in endpoints:
+        try:
+            resp = requests.post(ep, json=payload, headers=headers, timeout=15)
+            if resp.ok:
+                data = resp.json()
+                for key in ("download_url", "url", "data"):
+                    if isinstance(data, dict) and data.get(key):
+                        return {"success": True, "download_url": data.get(key)}
+        except Exception:
+            pass
+    # Try GET as fallback
+    for ep in endpoints:
+        try:
+            resp = requests.get(ep, headers=headers, params=payload, timeout=15)
+            if resp.ok:
+                data = resp.json()
+                for key in ("download_url", "url"):
+                    if isinstance(data, dict) and data.get(key):
+                        return {"success": True, "download_url": data.get(key)}
+        except Exception:
+            pass
+    return {"success": False, "error": "RapidAPI request failed"}
 
 @app.route('/')
 def index():
@@ -16,7 +61,12 @@ def download():
     
     if not url:
         return jsonify({'error': 'URL is required'}), 400
-    
+    # Try RapidAPI first (if credentials provided)
+    rapid = call_rapidapi(url, download_type)
+    if rapid.get('success'):
+        return jsonify({'success': True, 'download_url': rapid['download_url']})
+
+    # Fall back to platform-specific methods
     if 'instagram.com' in url:
         return download_instagram(url)
     elif 'youtube.com' in url or 'youtu.be' in url:
