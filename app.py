@@ -37,13 +37,28 @@ def download():
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
-            }]
+            }],
+            'extractor_retries': 3,
+            'fragment_retries': 3,
+            'nocheckcertificate': True,
         }
     else:
         ydl_opts = {
             'format': 'best',
             'outtmpl': f'{DOWNLOAD_FOLDER}/{filename}.%(ext)s',
+            'extractor_retries': 3,
+            'fragment_retries': 3,
+            'nocheckcertificate': True,
         }
+    
+    # Common options to bypass YouTube blocks
+    ydl_opts.update({
+        'nocheckcertificate': True,
+        'ignoreerrors': False,
+        'no_warnings': True,
+        'prefer_free_formats': True,
+        'geo_bypass': True,
+    })
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
