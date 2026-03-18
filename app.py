@@ -33,15 +33,17 @@ def download():
         'quiet': True,
         'nocolor': True,
         'check_formats': False,
+        'allow_multiple_video_streams': True,
+        'allow_multiple_audio_streams': True,
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         },
     }
     
     if download_type == 'audio':
-        ydl_opts['format'] = 'bestaudio[ext=m4a]/bestaudio/best'
+        ydl_opts['format'] = 'bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio/best'
     else:
-        ydl_opts['format'] = 'bestvideo[ext=webm]+bestaudio[ext=webm]/bestvideo+bestaudio/best'
+        ydl_opts['format'] = 'best[ext=webm]/bestvideo[ext=webm]+bestaudio[ext=webm]/best'
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
